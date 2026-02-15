@@ -1,9 +1,9 @@
-; Script Inno Setup para TodoList Kawaii
+; Script Inno Setup para Agenda Virtual
 ; Compilar desde Inno Setup Compiler (Build -> Compile). Requiere haber generado antes dist\TodoListKawaii.exe
 
-#define MyAppName "TodoList Kawaii"
+#define MyAppName "Agenda Virtual"
 #define MyAppVersion "1.0"
-#define MyAppPublisher "TodoList Kawaii"
+#define MyAppPublisher "Agenda Virtual"
 #define MyAppExeName "TodoListKawaii.exe"
 
 [Setup]
@@ -12,7 +12,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\TodoListKawaii
-DefaultGroupName=TodoList Kawaii
+DefaultGroupName=Agenda Virtual
 AllowNoIcons=yes
 ; Ruta donde está el .exe generado por PyInstaller (relativa a esta carpeta .iss)
 SourceDir=dist

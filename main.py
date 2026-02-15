@@ -468,7 +468,7 @@ class TodoApp:
     
     def __init__(self, root, db_path=None):
         self.root = root
-        self.root.title("Lista de Tareas")
+        self.root.title("Agenda Virtual")
         # Tamaño inicial más grande para que se vea todo el contenido (incluyendo checkbox permanente)
         self.root.geometry("950x900")
         # Tamaño mínimo para evitar que se haga muy pequeña
@@ -505,10 +505,10 @@ class TodoApp:
         main_frame = tk.Frame(self.root, bg="#FFE4E1", padx=15, pady=12)
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Título (más compacto)
+        # Título
         titulo_label = tk.Label(
             main_frame,
-            text="📝 ORDÉNATE MIERDA",
+            text="📝 AGENDA VIRTUAL",
             font=("Arial", 22, "bold"),
             bg="#FFE4E1",
             fg="#FF69B4"
@@ -1261,12 +1261,12 @@ class TodoApp:
             
             # Crear menú contextual
             menu = (
-                item("Abrir TodoList Kawaii", self.mostrar_ventana),
+                item("Abrir Agenda Virtual", self.mostrar_ventana),
                 item("Cerrar", self.cerrar_aplicacion),
             )
             
             # Crear icono en la bandeja
-            self.tray_icon = pystray.Icon("TodoList Kawaii", img_tray, "TodoList Kawaii", menu)
+            self.tray_icon = pystray.Icon("Agenda Virtual", img_tray, "Agenda Virtual", menu)
             
             # Iniciar el icono en un hilo separado
             def ejecutar_tray():

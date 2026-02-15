@@ -1,4 +1,4 @@
-# Guía para generar el instalador – TodoList Kawaii
+# Guía para generar el instalador – Agenda Virtual
 
 Esta guía te permite generar un **ejecutable** (.exe) y, opcionalmente, un **instalador** para que otra persona instale la app en su PC sin tener Python.
 
