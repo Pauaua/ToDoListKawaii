@@ -1,5 +1,10 @@
 ; Script Inno Setup para Agenda Virtual
-; Compilar desde Inno Setup Compiler (Build -> Compile). Requiere haber generado antes dist\TodoListKawaii.exe
+; Compilar desde Inno Setup Compiler (Build -> Compile).
+;
+; ARCHIVOS NECESARIOS (en la carpeta del proyecto, junto a este .iss):
+;   1. dist\TodoListKawaii.exe  -> generado antes con: build.bat (o pyinstaller TodoListKawaii.spec)
+;   2. icono_unicornio.ico      -> icono del instalador y del desinstalador (mismo que la app)
+;      Si solo tienes .png, ejecuta crear_icono_ico.py para generar el .ico
 
 #define MyAppName "Agenda Virtual"
 #define MyAppVersion "1.0"
@@ -14,7 +19,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\TodoListKawaii
 DefaultGroupName=Agenda Virtual
 AllowNoIcons=yes
-; Ruta donde está el .exe generado por PyInstaller (relativa a esta carpeta .iss)
+; Carpeta donde está el .exe (relativa a la carpeta donde está este .iss)
 SourceDir=dist
 OutputDir=Output
 OutputBaseFilename=TodoListKawaii_Setup
@@ -22,9 +27,8 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
-; Icono del instalador: si usas SetupIconFile y falla al compilar, déjalo comentado.
-; El .exe instalado (TodoListKawaii.exe) ya lleva el icono unicornio por PyInstaller.
-; SetupIconFile=icono_unicornio.ico
+; Icono unicornio: instalador y desinstalador (icono_unicornio.ico en la misma carpeta que este .iss)
+SetupIconFile=icono_unicornio.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]

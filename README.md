@@ -1,126 +1,120 @@
-# 📝 TODO List Kawaii
+# 📝 Agenda Virtual (Todo List Kawaii)
 
-Aplicación de escritorio para gestionar tareas con sistema de recordatorios mediante notificaciones del sistema operativo y WhatsApp.
+Aplicación de escritorio para gestionar tareas con recordatorios y notificaciones del sistema. Interfaz con varios estilos (Kawaii, Gatos, Azul), ventana responsiva y opción de ejecutable e instalador para Windows.
+
+---
 
 ## ✨ Características
 
-- ➕ Agregar tareas con título y descripción
-- ⏰ Programar recordatorios con fecha y hora específica
-- 🔔 Notificaciones del sistema operativo
-- 💬 Notificaciones por WhatsApp
-- ✅ Marcar tareas como completadas
-- 🗑️ Eliminar tareas
-- 💾 Almacenamiento persistente en base de datos SQLite
+- **Tareas:** agregar, editar, completar y eliminar con título, descripción e importancia (Normal, Importante, Urgente).
+- **Recordatorios:** fecha y hora con notificaciones del sistema (zona horaria Chile).
+- **Tareas permanentes:** recordatorio diario desde una fecha de inicio.
+- **Tres estilos visuales:** Kawaii (rosa), Gatos (verde, temática gato), Azul (azul).
+- **Tamaño de ventana:** Pantalla completa, Mediano o Pequeño (layout adaptado).
+- **Preferencias guardadas:** estilo y tamaño se pueden mantener al iniciar.
+- **Interfaz responsiva:** se adapta al redimensionar; en tamaño Pequeño los controles se reorganizan (botones en 2 filas, checkbox “TP” para tarea permanente).
+- **Bandeja del sistema:** opción de minimizar a la bandeja en lugar de cerrar.
+- **Base de datos SQLite:** persistencia local de tareas y configuración de tema/tamaño.
+
+---
 
 ## 📋 Requisitos
 
-- Python 3.7 o superior
-- Sistema operativo: Windows, Linux o macOS
+- **Python 3.8+**
+- Windows (recomendado para .exe e instalador); también puede ejecutarse en Linux/macOS con Python.
 
-## 🚀 Instalación
+---
 
-1. Clona o descarga este proyecto
+## 🚀 Instalación y uso desde código
 
-2. Instala las dependencias necesarias:
-```bash
-pip install -r requirements.txt
-```
+1. Clona o descarga el repositorio.
 
-## 💻 Uso
+2. Instala dependencias:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-1. Ejecuta la aplicación:
-```bash
-python main.py
-```
+3. Ejecuta la aplicación:
+   ```bash
+   python main.py
+   ```
 
-2. **Agregar una tarea:**
-   - Ingresa el título de la tarea (obligatorio)
-   - Opcionalmente agrega una descripción
-   - Para establecer un recordatorio:
-     - Marca el checkbox "Activar recordatorio"
-     - Selecciona la fecha usando el calendario
-     - Ingresa la hora en formato HH:MM (ejemplo: 14:30)
-   - Selecciona el tipo de notificación deseada (sistema y/o WhatsApp)
-   - Haz clic en "➕ Agregar Tarea"
-   
-   **Nota:** La aplicación usa la zona horaria de Chile (America/Santiago) para todos los recordatorios.
+---
 
-3. **Configurar WhatsApp:**
-   - Haz clic en "💬 Configurar WhatsApp"
-   - Necesitas una cuenta de Twilio (gratuita para pruebas)
-   - Ingresa tus credenciales de Twilio:
-     - **Account SID:** Tu Account SID de Twilio
-     - **Auth Token:** Tu Auth Token de Twilio
-     - **Número WhatsApp Business:** El número proporcionado por Twilio (formato: +56912345678)
-     - **Número de destino:** Tu número donde recibirás las notificaciones (formato: +56912345678)
-   - Haz clic en "💾 Guardar"
-   - Consulta `GUIA_WHATSAPP.md` para más detalles
+## 📦 Generar ejecutable e instalador (Windows)
 
-4. **Gestionar tareas:**
-   - Selecciona una tarea de la lista
-   - Usa "✓ Completar" para marcarla como completada
-   - Usa "🗑️ Eliminar" para eliminar una tarea
-   - Usa "🔄 Refrescar" para actualizar la lista
+### Ejecutable (.exe)
 
-## 💬 Configuración de WhatsApp
+1. Cierra la aplicación si está abierta (para evitar “Acceso denegado”).
+2. Ejecuta **`build.bat`** desde la carpeta del proyecto.
+3. El ejecutable se genera en **`dist\TodoListKawaii.exe`**.  
+   Puedes copiar solo ese .exe a otra PC; no requiere Python.
 
-La aplicación usa **Twilio** para enviar notificaciones por WhatsApp.
+### Instalador (Inno Setup)
 
-### Requisitos:
-1. **Cuenta de Twilio**: Crea una cuenta gratuita en [Twilio](https://www.twilio.com)
-2. **Credenciales**: Obtén tu Account SID y Auth Token desde el panel de Twilio
-3. **Número de WhatsApp Business**: Twilio te proporciona un número de prueba
+1. Genera antes el .exe con `build.bat`.
+2. Ten **`icono_unicornio.ico`** en la carpeta del proyecto (si solo tienes .png, usa **`crear_icono_ico.py`** para generar el .ico).
+3. Abre **Inno Setup Compiler** → **File → Open** → **`instalador_todolist.iss`**.
+4. **Build → Compile** (F9).  
+   El instalador se genera en **`Output\TodoListKawaii_Setup.exe`**.
 
-### Pasos rápidos:
-1. Regístrate en [Twilio](https://www.twilio.com) (cuenta gratuita con créditos de prueba)
-2. Obtén tus credenciales desde el Dashboard de Twilio
-3. Configura WhatsApp en la aplicación usando el botón "💬 Configurar WhatsApp"
-4. Consulta `GUIA_WHATSAPP.md` para instrucciones detalladas
+Detalles y solución de problemas: **`GUIA_INSTALADOR.md`**.
 
-### Formato de números:
-- ✅ Correcto: `+56912345678` (con código de país y signo +)
-- ❌ Incorrecto: `912345678` (sin código de país)
+---
 
-## 📁 Estructura del Proyecto
+## 💻 Uso básico
+
+- **Nueva tarea:** rellena título (obligatorio), opcionalmente descripción, activa recordatorio si quieres (fecha, hora, y opción “Tarea permanente” para recordatorio diario). Elige importancia y pulsa **Agregar Tarea**.
+- **Estilo:** selector para Kawaii, Gatos o Azul. Opción **Mantener al iniciar** para recordar el estilo.
+- **Tamaño:** Pantalla completa, Mediano o Pequeño; en Pequeño la interfaz se compacta (incluido el checkbox “TP” para tarea permanente).
+- **Lista de tareas:** selecciona una tarea y usa **Editar**, **Completar**, **Eliminar** o **Refrescar**.
+
+Las notificaciones se envían automáticamente al sistema cuando llega la fecha/hora del recordatorio (o cada día a esa hora si es tarea permanente).
+
+---
+
+## 📁 Estructura del proyecto
 
 ```
 TODOLISTKAWAII/
-├── main.py              # Aplicación principal
-├── requirements.txt     # Dependencias del proyecto
-├── README.md           # Este archivo
-├── tareas.db           # Base de datos SQLite (se crea automáticamente)
-└── config_email.json   # Configuración de correo (se crea automáticamente)
+├── main.py                    # Aplicación principal
+├── requirements.txt           # Dependencias Python
+├── README.md                  # Este archivo
+├── build.bat                  # Genera dist\TodoListKawaii.exe
+├── TodoListKawaii.spec        # Configuración PyInstaller
+├── instalador_todolist.iss    # Script Inno Setup para el instalador
+├── crear_icono_ico.py         # Genera icono .ico desde .png
+├── GUIA_INSTALADOR.md         # Guía ejecutable e instalador
+├── CAMBIAR_ICONO_MANUAL.md    # Cómo cambiar el icono del .exe con Resource Hacker
+├── GUIA_SQLITE.md             # Documentación base de datos
+├── icono_unicornio.png        # Icono (y .ico para el instalador)
+├── tareas.db                  # Base de datos (se crea al usar la app)
+└── config_tema.json          # Tema y tamaño guardados (se crea al usar; en .gitignore)
 ```
+
+---
 
 ## 🔧 Dependencias
 
-- **plyer:** Para notificaciones del sistema operativo
-- **schedule:** Para programar verificaciones de recordatorios
-- **python-dateutil:** Para manejo de fechas
-- **tkcalendar:** Para el selector de calendario
-- **pytz:** Para manejo de zonas horarias (Chile)
-- **twilio:** Para enviar notificaciones por WhatsApp
-- **tkinter:** Interfaz gráfica (incluida con Python)
-- **sqlite3:** Base de datos (incluida con Python)
+- **tkinter** – Interfaz gráfica (incluido con Python).
+- **tkcalendar** – Selector de fecha.
+- **pytz** – Zona horaria (Chile).
+- **schedule** – Verificación de recordatorios.
+- **python-dateutil** – Manejo de fechas.
+- **plyer** – Notificaciones del sistema.
+- **Pillow** – Imágenes (icono, bandeja).
+- **pystray** – Icono en la bandeja del sistema.
+
+---
 
 ## 📝 Notas
 
-- Las notificaciones del sistema se verifican cada minuto
-- Las tareas con recordatorio se notifican cuando la fecha/hora programada llega o pasa
-- La configuración de WhatsApp se guarda en `config_whatsapp.json` (no compartas este archivo)
-- Las tareas se almacenan en `tareas.db` (base de datos SQLite)
+- Los recordatorios usan la zona horaria **America/Santiago** (Chile).
+- La configuración de tema y tamaño se guarda en **`config_tema.json`** (no se sube al repo).
+- La base de datos **`tareas.db`** se crea en la misma carpeta que el script o el .exe.
 
-## 🎨 Personalización
-
-La aplicación tiene un diseño "kawaii" con colores rosados. Puedes modificar los colores en el archivo `main.py` cambiando los valores de `bg` (background) y `fg` (foreground) en los widgets.
-
-## ⚠️ Advertencias
-
-- Asegúrate de mantener seguras tus credenciales de Twilio
-- El archivo `config_whatsapp.json` contiene información sensible, no lo compartas
-- Los números deben estar en formato internacional con código de país (ejemplo: +56912345678)
-- Twilio tiene costos por mensaje en producción (consulta los precios en su sitio web)
+---
 
 ## 📄 Licencia
 
-Este proyecto es de código abierto y está disponible para uso personal y educativo.
+Proyecto de código abierto para uso personal y educativo.

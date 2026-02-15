@@ -28,6 +28,7 @@ wheels/
 
 # Configuración sensible
 config_email.json
+config_tema.json
 
 # IDE
 .vscode/

@@ -45,6 +45,139 @@ def get_ruta_recurso(nombre_archivo):
     return os.path.join(get_ruta_base(), nombre_archivo)
 
 
+# Paletas de estilos: Kawaii, Gatos (verde/rojo), Azul
+TEMAS = {
+    "Kawaii": {
+        "bg_main": "#FFE4E1",
+        "bg_frame": "#FFE4E1",
+        "fg_title": "#FF69B4",
+        "fg_text": "#8B008B",
+        "btn_bg": "#FF69B4",
+        "btn_fg": "white",
+        "calendar_bg": "#FF69B4",
+        "calendar_fg": "white",
+        "importance_normal": "#87CEEB",
+        "importance_importante": "#FFD700",
+        "importance_urgente": "#FF6347",
+        "notif_bg": "#FFE4E1",
+        "notif_frame": "#FFB6C1",
+        "notif_fg_hey": "#FF1493",
+        "notif_fg_text": "#8B008B",
+        "notif_btn": "#FF69B4",
+    },
+    "Gatos": {
+        "bg_main": "#F1F8E9",
+        "bg_frame": "#F1F8E9",
+        "fg_title": "#2E7D32",
+        "fg_text": "#1B5E20",
+        "btn_bg": "#43A047",
+        "btn_fg": "white",
+        "calendar_bg": "#388E3C",
+        "calendar_fg": "white",
+        "importance_normal": "#81C784",
+        "importance_importante": "#C62828",
+        "importance_urgente": "#B71C1C",
+        "notif_bg": "#E8F5E9",
+        "notif_frame": "#A5D6A7",
+        "notif_fg_hey": "#1B5E20",
+        "notif_fg_text": "#2E7D32",
+        "notif_btn": "#43A047",
+        "titulo_principal": "🐱 AGENDA VIRTUAL",
+        "titulo_nueva_tarea": "🐱 Nueva Tarea",
+        "titulo_tareas_pendientes": "🐱 Tareas Pendientes",
+        "btn_agregar_text": "🐱 Agregar Tarea",
+        "msg_notif": "🐱 Las notificaciones se enviarán automáticamente a tu sistema. 🐾",
+        "notif_hey": "🐱 ¡MIAU! ¡TIENES UN PENDIENTE! 🐾",
+        "notif_btn_cerrar": "🐾 Cerrar",
+    },
+    "Azul": {
+        "bg_main": "#E3F2FD",
+        "bg_frame": "#E3F2FD",
+        "fg_title": "#1565C0",
+        "fg_text": "#0D47A1",
+        "btn_bg": "#1976D2",
+        "btn_fg": "white",
+        "calendar_bg": "#1E88E5",
+        "calendar_fg": "white",
+        "importance_normal": "#64B5F6",
+        "importance_importante": "#FFA726",
+        "importance_urgente": "#EF5350",
+        "notif_bg": "#BBDEFB",
+        "notif_frame": "#90CAF9",
+        "notif_fg_hey": "#0D47A1",
+        "notif_fg_text": "#1565C0",
+        "notif_btn": "#1976D2",
+    },
+}
+
+CONFIG_TEMA_ARCHIVO = "config_tema.json"
+
+# Opciones de tamaño de ventana (clave interna: valor para guardar)
+TAMANOS_VENTANA = {
+    "Pantalla completa": "completa",
+    "Mediano": "mediano",
+    "Pequeño": "pequeño",
+}
+TAMANOS_GEOMETRIA = {
+    "mediano": (900, 750),
+    "pequeño": (400, 820),
+}
+
+
+def cargar_config_tema():
+    """Carga tema, recordar_estilo y tamaño_ventana. Devuelve (tema_actual, tema_guardado, recordar_estilo, tamaño_ventana)."""
+    ruta = os.path.join(get_ruta_base(), CONFIG_TEMA_ARCHIVO)
+    tema_guardado = "Kawaii"
+    recordar_estilo = True
+    tamaño_ventana = "mediano"
+    if os.path.isfile(ruta):
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                tema_guardado = data.get("tema", "Kawaii")
+                if tema_guardado not in TEMAS:
+                    tema_guardado = "Azul" if tema_guardado == "Fútbol" else "Kawaii"
+                recordar_estilo = data.get("recordar_estilo", True)
+                t = data.get("tamaño_ventana", "mediano")
+                if t in ("completa", "mediano", "pequeño"):
+                    tamaño_ventana = t
+        except Exception:
+            pass
+    tema_inicial = tema_guardado if recordar_estilo else "Kawaii"
+    return tema_inicial, tema_guardado, recordar_estilo, tamaño_ventana
+
+
+def cargar_tema_guardado():
+    """Carga el tema con el que iniciar (respeta 'recordar_estilo')."""
+    tema_inicial, _, _, _ = cargar_config_tema()
+    return tema_inicial
+
+
+def guardar_tema(tema=None, recordar_estilo=None, tamaño_ventana=None):
+    """Guarda tema, recordar_estilo y/o tamaño_ventana en config."""
+    ruta = os.path.join(get_ruta_base(), CONFIG_TEMA_ARCHIVO)
+    data = {}
+    if os.path.isfile(ruta):
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            pass
+    if tema is not None and tema in TEMAS:
+        data["tema"] = tema
+    if recordar_estilo is not None:
+        data["recordar_estilo"] = bool(recordar_estilo)
+    if tamaño_ventana is not None and tamaño_ventana in ("completa", "mediano", "pequeño"):
+        data["tamaño_ventana"] = tamaño_ventana
+    if not data.get("recordar_estilo") and "recordar_estilo" not in data:
+        data["recordar_estilo"] = True
+    try:
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
 class Database:
     """Maneja la base de datos SQLite para almacenar tareas"""
     
@@ -279,20 +412,19 @@ class NotificacionKawaii:
         self.parent = parent
         self.ventanas_notificacion = []
     
-    def crear_notificacion(self, titulo, mensaje):
-        """Crea una ventana de notificación con efectos de brillo"""
+    def crear_notificacion(self, titulo, mensaje, tema="Kawaii"):
+        """Crea una ventana de notificación con efectos de brillo (colores según tema)."""
+        t = TEMAS.get(tema, TEMAS["Kawaii"])
         ventana = tk.Toplevel(self.parent if self.parent else None)
         ventana.title("✨ Recordatorio")
         ventana.geometry("420x260")
-        ventana.configure(bg="#FFE4E1")
+        ventana.configure(bg=t["notif_bg"])
         ventana.overrideredirect(True)  # Sin bordes
         
-        # Asegurar que aparezca siempre en primer plano, incluso si la ventana principal está oculta
         ventana.attributes("-topmost", True)
         ventana.lift()
         ventana.focus_force()
         
-        # Posicionar en la esquina superior derecha
         ventana.update_idletasks()
         width = 420
         height = 260
@@ -300,57 +432,52 @@ class NotificacionKawaii:
         y = 20
         ventana.geometry(f"{width}x{height}+{x}+{y}")
         
-        # Frame principal con gradiente y borde decorativo
         frame_principal = tk.Frame(
-            ventana, 
-            bg="#FFB6C1", 
-            padx=20, 
+            ventana,
+            bg=t["notif_frame"],
+            padx=20,
             pady=15,
             relief=tk.RAISED,
             bd=5
         )
         frame_principal.pack(fill=tk.BOTH, expand=True)
         
-        # Título grande arriba: ¡HEY HEY, TIENES UN PENDIENTE!
         hey_label = tk.Label(
             frame_principal,
-            text="¡HEY HEY, TIENES UN PENDIENTE!",
+            text=t.get("notif_hey", "¡HEY HEY, TIENES UN PENDIENTE!"),
             font=("Arial", 16, "bold"),
-            bg="#FFB6C1",
-            fg="#FF1493",
+            bg=t["notif_frame"],
+            fg=t["notif_fg_hey"],
             wraplength=380
         )
         hey_label.pack(pady=(0, 10))
         
-        # Título de la tarea
         titulo_label = tk.Label(
             frame_principal,
             text=titulo,
             font=("Arial", 14, "bold"),
-            bg="#FFB6C1",
-            fg="#8B008B",
+            bg=t["notif_frame"],
+            fg=t["notif_fg_text"],
             wraplength=380
         )
         titulo_label.pack(pady=(0, 8))
         
-        # Mensaje
         mensaje_label = tk.Label(
             frame_principal,
             text=mensaje,
             font=("Arial", 11),
-            bg="#FFB6C1",
-            fg="#8B008B",
+            bg=t["notif_frame"],
+            fg=t["notif_fg_text"],
             wraplength=350,
             justify=tk.LEFT
         )
         mensaje_label.pack(pady=(0, 12))
         
-        # Botón cerrar
         btn_cerrar = tk.Button(
             frame_principal,
-            text="💖 Cerrar",
+            text=t.get("notif_btn_cerrar", "💖 Cerrar"),
             command=ventana.destroy,
-            bg="#FF69B4",
+            bg=t["notif_btn"],
             fg="white",
             font=("Arial", 10, "bold"),
             padx=20,
@@ -361,8 +488,7 @@ class NotificacionKawaii:
         )
         btn_cerrar.pack()
         
-        # Efectos de brillo animados
-        self.animar_brillos(ventana, frame_principal)
+        self.animar_brillos(ventana, frame_principal, t["notif_frame"])
         
         # Cerrar automáticamente después de 10 segundos
         ventana.after(10000, ventana.destroy)
@@ -375,9 +501,9 @@ class NotificacionKawaii:
         
         return ventana
     
-    def animar_brillos(self, ventana, frame):
+    def animar_brillos(self, ventana, frame, color_fondo="#FFB6C1"):
         """Crea partículas de brillo animadas"""
-        canvas = tk.Canvas(frame, width=420, height=260, bg="#FFB6C1", highlightthickness=0)
+        canvas = tk.Canvas(frame, width=420, height=260, bg=color_fondo, highlightthickness=0)
         canvas.pack(fill=tk.BOTH, expand=True)
         # Bajar el widget canvas al fondo (Canvas.lower() es para ítems, no para el widget)
         frame.tk.call('lower', canvas._w)
@@ -451,14 +577,16 @@ class NotificacionKawaii:
 class Notificador:
     """Maneja las notificaciones del sistema"""
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, obtener_tema=None):
         self.parent = parent
+        self.obtener_tema = obtener_tema or (lambda: "Kawaii")
         self.notificador_kawaii = NotificacionKawaii(parent)
     
     def notificar_sistema(self, titulo, mensaje):
         """Envía una notificación personalizada con brillos"""
         try:
-            self.notificador_kawaii.crear_notificacion(titulo, mensaje)
+            tema = self.obtener_tema() if self.obtener_tema else "Kawaii"
+            self.notificador_kawaii.crear_notificacion(titulo, mensaje, tema=tema)
         except Exception as e:
             print(f"Error al enviar notificación: {e}")
 
@@ -469,18 +597,19 @@ class TodoApp:
     def __init__(self, root, db_path=None):
         self.root = root
         self.root.title("Agenda Virtual")
-        # Tamaño inicial más grande para que se vea todo el contenido (incluyendo checkbox permanente)
-        self.root.geometry("950x900")
-        # Tamaño mínimo para evitar que se haga muy pequeña
-        self.root.minsize(850, 750)
-        self.root.configure(bg="#FFE4E1")
+        tema_inicial, _, recordar, tamaño_inicial = cargar_config_tema()
+        self.tema_actual = tema_inicial
+        self.recordar_estilo_inicial = recordar
+        self.tamaño_ventana_actual = tamaño_inicial
+        self.root.configure(bg=TEMAS.get(self.tema_actual, TEMAS["Kawaii"])["bg_main"])
         
         self.db = Database(db_name=db_path or "tareas.db")
-        self.notificador = Notificador(self.root)
+        self.notificador = Notificador(self.root, obtener_tema=lambda: self.tema_actual)
         
-        # Cursor normal; "heart" suele verse en tono rosado/rojo en muchos sistemas
+        # Cursor según tema: Gatos = manita (hand2), Kawaii = heart, resto = arrow
         try:
-            self.root.config(cursor="heart")
+            c = "hand2" if self.tema_actual == "Gatos" else "heart" if self.tema_actual == "Kawaii" else "arrow"
+            self.root.config(cursor=c)
         except tk.TclError:
             self.root.config(cursor="arrow")
         
@@ -497,69 +626,123 @@ class TodoApp:
         self.iniciar_verificador_recordatorios()
         
         self.crear_interfaz()
+        self._aplicar_tamaño_ventana(self.tamaño_ventana_actual)
         self.actualizar_lista_tareas()
+    
+    def get_tema(self):
+        """Devuelve el diccionario de colores del tema actual."""
+        return TEMAS.get(self.tema_actual, TEMAS["Kawaii"])
     
     def crear_interfaz(self):
         """Crea la interfaz gráfica de la aplicación"""
-        # Frame principal con grid para mejor control del layout
-        main_frame = tk.Frame(self.root, bg="#FFE4E1", padx=15, pady=12)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        t = self.get_tema()
+        self.root.configure(bg=t["bg_main"])
         
-        # Título
-        titulo_label = tk.Label(
-            main_frame,
-            text="📝 AGENDA VIRTUAL",
+        # Frame principal
+        self.main_frame = tk.Frame(self.root, bg=t["bg_main"], padx=15, pady=12)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.main_frame.bind("<Configure>", self._actualizar_wraplength)
+        
+        # Fila superior: Título en una línea, controles en la siguiente (responsivo)
+        frame_titulo = tk.Frame(self.main_frame, bg=t["bg_main"])
+        frame_titulo.pack(fill=tk.X, pady=(0, 6))
+        
+        self.titulo_label = tk.Label(
+            frame_titulo,
+            text=t.get("titulo_principal", "📝 AGENDA VIRTUAL"),
             font=("Arial", 22, "bold"),
-            bg="#FFE4E1",
-            fg="#FF69B4"
+            bg=t["bg_main"],
+            fg=t["fg_title"]
         )
-        titulo_label.pack(pady=(0, 10))
+        self.titulo_label.pack(anchor=tk.W)
+        
+        frame_estilo = tk.Frame(frame_titulo, bg=t["bg_main"])
+        frame_estilo.pack(fill=tk.X, pady=(4, 0))
+        tk.Label(frame_estilo, text="Estilo:", bg=t["bg_main"], font=("Arial", 10), fg=t["fg_text"]).pack(side=tk.LEFT, padx=(0, 5))
+        self.var_tema = tk.StringVar(value=self.tema_actual)
+        self.combo_tema = ttk.Combobox(
+            frame_estilo,
+            textvariable=self.var_tema,
+            values=list(TEMAS.keys()),
+            state="readonly",
+            width=12,
+            font=("Arial", 10)
+        )
+        self.combo_tema.pack(side=tk.LEFT, padx=(0, 12))
+        self.combo_tema.bind("<<ComboboxSelected>>", self._cambiar_tema)
+        self.var_recordar_estilo = tk.BooleanVar(value=getattr(self, "recordar_estilo_inicial", True))
+        self.check_recordar_estilo = tk.Checkbutton(
+            frame_estilo,
+            text="Mantener al iniciar",
+            variable=self.var_recordar_estilo,
+            bg=t["bg_main"],
+            fg=t["fg_text"],
+            font=("Arial", 10),
+            activebackground=t["bg_main"],
+            command=self._guardar_recordar_estilo
+        )
+        self.check_recordar_estilo.pack(side=tk.LEFT)
+        
+        # Tamaño de ventana en su propia fila (así se ve en ancho pequeño y se puede cambiar)
+        frame_tamaño = tk.Frame(frame_titulo, bg=t["bg_main"])
+        frame_tamaño.pack(fill=tk.X, pady=(6, 0))
+        tk.Label(frame_tamaño, text="Tamaño:", bg=t["bg_main"], font=("Arial", 10), fg=t["fg_text"]).pack(side=tk.LEFT, padx=(0, 5))
+        self.var_tamaño = tk.StringVar(value=self._etiqueta_tamaño(self.tamaño_ventana_actual))
+        self.combo_tamaño = ttk.Combobox(
+            frame_tamaño,
+            textvariable=self.var_tamaño,
+            values=list(TAMANOS_VENTANA.keys()),
+            state="readonly",
+            width=22,
+            font=("Arial", 10)
+        )
+        self.combo_tamaño.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        self.combo_tamaño.bind("<<ComboboxSelected>>", self._cambiar_tamaño_ventana)
         
         # Frame para agregar tareas
-        frame_agregar = tk.LabelFrame(
-            main_frame,
-            text="➕ Nueva Tarea",
+        self.frame_agregar = tk.LabelFrame(
+            self.main_frame,
+            text=t.get("titulo_nueva_tarea", "➕ Nueva Tarea"),
             font=("Arial", 11, "bold"),
-            bg="#FFE4E1",
-            fg="#FF69B4",
+            bg=t["bg_main"],
+            fg=t["fg_title"],
             padx=8,
             pady=6
         )
-        frame_agregar.pack(fill=tk.X, pady=(0, 6))
+        self.frame_agregar.pack(fill=tk.X, pady=(0, 6))
         
         # Título de la tarea
         tk.Label(
-            frame_agregar,
+            self.frame_agregar,
             text="Título:",
-            bg="#FFE4E1",
+            bg=t["bg_main"],
+            fg=t["fg_text"],
             font=("Arial", 10)
         ).pack(anchor=tk.W)
-        self.entry_titulo = tk.Entry(frame_agregar, font=("Arial", 11), width=50)
+        self.entry_titulo = tk.Entry(self.frame_agregar, font=("Arial", 11), width=30)
         self.entry_titulo.pack(fill=tk.X, pady=(4, 6))
         
-        # Descripción (altura reducida)
+        # Descripción
         tk.Label(
-            frame_agregar,
+            self.frame_agregar,
             text="Descripción:",
-            bg="#FFE4E1",
+            bg=t["bg_main"],
+            fg=t["fg_text"],
             font=("Arial", 10)
         ).pack(anchor=tk.W)
-        self.text_descripcion = tk.Text(frame_agregar, font=("Arial", 10), height=2, width=50)
+        self.text_descripcion = tk.Text(self.frame_agregar, font=("Arial", 10), height=2, width=30)
         self.text_descripcion.pack(fill=tk.X, pady=(4, 6))
         
-        # Frame para recordatorio (reorganizado en dos filas para mejor visibilidad)
-        frame_recordatorio = tk.Frame(frame_agregar, bg="#FFE4E1")
+        # Frame para recordatorio
+        frame_recordatorio = tk.Frame(self.frame_agregar, bg=t["bg_main"])
         frame_recordatorio.pack(fill=tk.X, pady=(0, 8))
         
-        # Primera fila: Checkbox y controles básicos
-        frame_fila1 = tk.Frame(frame_recordatorio, bg="#FFE4E1")
+        frame_fila1 = tk.Frame(frame_recordatorio, bg=t["bg_main"])
         frame_fila1.pack(fill=tk.X, pady=(0, 5))
         
-        # Variable para controlar si se usa recordatorio
         self.var_usar_recordatorio = tk.BooleanVar(value=False)
         
         def toggle_recordatorio():
-            """Habilita/deshabilita calendario y hora según el checkbox"""
             estado = self.var_usar_recordatorio.get()
             if estado:
                 self.calendario.config(state='normal')
@@ -567,7 +750,7 @@ class TodoApp:
             else:
                 self.calendario.config(state='disabled')
                 self.entry_hora.config(state='disabled')
-                self.var_es_permanente.set(False)  # Desactivar permanente si se desactiva recordatorio
+                self.var_es_permanente.set(False)
         
         self.var_usar_recordatorio.trace('w', lambda *args: toggle_recordatorio())
         
@@ -575,133 +758,122 @@ class TodoApp:
             frame_fila1,
             text="Activar recordatorio",
             variable=self.var_usar_recordatorio,
-            bg="#FFE4E1",
+            bg=t["bg_main"],
+            fg=t["fg_text"],
             font=("Arial", 10, "bold"),
             command=toggle_recordatorio
         )
         checkbox_recordatorio.pack(side=tk.LEFT, padx=(0, 15))
         
-        # Checkbox para tarea permanente (solo si tiene recordatorio)
         self.var_es_permanente = tk.BooleanVar(value=False)
-        checkbox_permanente = tk.Checkbutton(
+        self._texto_checkbox_permanente_largo = "🔄 Tarea permanente (diaria desde esta fecha)"
+        self._texto_checkbox_permanente_corto = "TP"
+        self.checkbox_permanente = tk.Checkbutton(
             frame_fila1,
-            text="🔄 Tarea permanente (diaria desde esta fecha)",
+            text=self._texto_checkbox_permanente_largo,
             variable=self.var_es_permanente,
-            bg="#FFE4E1",
+            bg=t["bg_main"],
             font=("Arial", 10),
-            fg="#8B008B"
+            fg=t["fg_text"]
         )
-        checkbox_permanente.pack(side=tk.LEFT)
+        self.checkbox_permanente.pack(side=tk.LEFT)
+        self._actualizar_texto_checkbox_permanente()
         
-        # Segunda fila: Fecha y hora (solo visible cuando recordatorio está activado)
-        frame_fila2 = tk.Frame(frame_recordatorio, bg="#FFE4E1")
+        frame_fila2 = tk.Frame(frame_recordatorio, bg=t["bg_main"])
         frame_fila2.pack(fill=tk.X)
         
-        tk.Label(
-            frame_fila2,
-            text="Fecha:",
-            bg="#FFE4E1",
-            font=("Arial", 10)
-        ).pack(side=tk.LEFT, padx=(0, 5))
+        tk.Label(frame_fila2, text="Fecha:", bg=t["bg_main"], fg=t["fg_text"], font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 5))
         
-        # Calendario para seleccionar fecha
         self.calendario = DateEntry(
             frame_fila2,
             width=12,
-            background='#FF69B4',
-            foreground='white',
+            background=t["calendar_bg"],
+            foreground=t["calendar_fg"],
             borderwidth=2,
             date_pattern='yyyy-mm-dd',
             font=("Arial", 10)
         )
         self.calendario.pack(side=tk.LEFT, padx=(0, 15))
         
-        # Hora del recordatorio
-        tk.Label(
-            frame_fila2,
-            text="Hora (HH:MM):",
-            bg="#FFE4E1",
-            font=("Arial", 10)
-        ).pack(side=tk.LEFT, padx=(0, 5))
+        tk.Label(frame_fila2, text="Hora (HH:MM):", bg=t["bg_main"], fg=t["fg_text"], font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 5))
         self.entry_hora = tk.Entry(frame_fila2, font=("Arial", 10), width=8)
         self.entry_hora.pack(side=tk.LEFT)
-        self.entry_hora.insert(0, "09:00")  # Hora por defecto
+        self.entry_hora.insert(0, "09:00")
         
-        # Inicializar estado deshabilitado
         self.calendario.config(state='disabled')
         self.entry_hora.config(state='disabled')
         
-        # Frame para importancia
-        frame_importancia = tk.Frame(frame_agregar, bg="#FFE4E1")
+        # Importancia
+        frame_importancia = tk.Frame(self.frame_agregar, bg=t["bg_main"])
         frame_importancia.pack(fill=tk.X, pady=(0, 6))
         
         tk.Label(
             frame_importancia,
             text="Importancia:",
-            bg="#FFE4E1",
+            bg=t["bg_main"],
+            fg=t["fg_text"],
             font=("Arial", 10, "bold")
         ).pack(side=tk.LEFT, padx=(0, 10))
         
         self.var_importancia = tk.StringVar(value="Normal")
-        opciones_importancia = ["Normal", "Importante", "Urgente"]
-        
-        for opcion in opciones_importancia:
-            color = "#87CEEB" if opcion == "Normal" else "#FFD700" if opcion == "Importante" else "#FF6347"
+        for opcion in ["Normal", "Importante", "Urgente"]:
+            color = t["importance_normal"] if opcion == "Normal" else t["importance_importante"] if opcion == "Importante" else t["importance_urgente"]
             tk.Radiobutton(
                 frame_importancia,
                 text=opcion,
                 variable=self.var_importancia,
                 value=opcion,
-                bg="#FFE4E1",
+                bg=t["bg_main"],
+                fg=t["fg_text"],
                 font=("Arial", 10),
                 selectcolor=color,
-                activebackground="#FFE4E1"
+                activebackground=t["bg_main"]
             ).pack(side=tk.LEFT, padx=(0, 15))
         
-        # Checkbox para notificaciones (siempre activo)
-        frame_notificaciones = tk.Frame(frame_agregar, bg="#FFE4E1")
+        frame_notificaciones = tk.Frame(self.frame_agregar, bg=t["bg_main"])
         frame_notificaciones.pack(fill=tk.X, pady=(0, 6))
         
         self.var_notif_sistema = tk.BooleanVar(value=True)
-        
-        tk.Label(
+        self.label_notif = tk.Label(
             frame_notificaciones,
-            text="✨ Las notificaciones se enviarán automáticamente a tu sistema. ✨",
-            bg="#FFE4E1",
+            text=t.get("msg_notif", "✨ Las notificaciones se enviarán automáticamente a tu sistema. ✨"),
+            bg=t["bg_main"],
             font=("Arial", 10, "bold"),
-            fg="#FF69B4"
-        ).pack(side=tk.LEFT)
+            fg=t["fg_title"],
+            wraplength=400,
+            justify=tk.LEFT
+        )
+        self.label_notif.pack(anchor=tk.W)
         
-        # Botón agregar
-        btn_agregar = tk.Button(
-            frame_agregar,
-            text="➕ Agregar Tarea",
+        self.btn_agregar = tk.Button(
+            self.frame_agregar,
+            text=t.get("btn_agregar_text", "➕ Agregar Tarea"),
             command=self.agregar_tarea,
-            bg="#FF69B4",
-            fg="white",
+            bg=t["btn_bg"],
+            fg=t["btn_fg"],
             font=("Arial", 11, "bold"),
             padx=20,
             pady=5,
             cursor="hand2"
         )
-        btn_agregar.pack(pady=(5, 0))
+        self.btn_agregar.pack(pady=(5, 0))
         
-        # Frame para lista de tareas
-        frame_lista = tk.LabelFrame(
-            main_frame,
-            text="📋 Tareas Pendientes",
+        # Lista de tareas
+        self.frame_lista = tk.LabelFrame(
+            self.main_frame,
+            text=t.get("titulo_tareas_pendientes", "📋 Tareas Pendientes"),
             font=("Arial", 11, "bold"),
-            bg="#FFE4E1",
-            fg="#FF69B4",
+            bg=t["bg_main"],
+            fg=t["fg_title"],
             padx=8,
             pady=6
         )
-        frame_lista.pack(fill=tk.BOTH, expand=True, pady=(6, 6))
+        self.frame_lista.pack(fill=tk.BOTH, expand=True, pady=(6, 6))
         
-        # Treeview para mostrar tareas
+        self._aplicar_estilo_ttk()
+        
         columns = ("ID", "Título", "Descripción", "Importancia", "Recordatorio")
-        # Altura ajustada para que quepa todo
-        self.tree = ttk.Treeview(frame_lista, columns=columns, show="headings", height=14)
+        self.tree = ttk.Treeview(self.frame_lista, columns=columns, show="headings", height=8)
         
         self.tree.heading("ID", text="ID")
         self.tree.heading("Título", text="Título")
@@ -709,74 +881,234 @@ class TodoApp:
         self.tree.heading("Importancia", text="Importancia")
         self.tree.heading("Recordatorio", text="Recordatorio")
         
-        self.tree.column("ID", width=40)
-        self.tree.column("Título", width=180)
-        self.tree.column("Descripción", width=250)
-        self.tree.column("Importancia", width=100)
-        self.tree.column("Recordatorio", width=150)
+        # Anchos mínimos (px); se redistribuyen al redimensionar
+        self._tree_min_widths = {"ID": 36, "Título": 80, "Descripción": 100, "Importancia": 72, "Recordatorio": 90}
+        for col, w in self._tree_min_widths.items():
+            self.tree.column(col, width=w, minwidth=w)
         
-        scrollbar = ttk.Scrollbar(frame_lista, orient=tk.VERTICAL, command=self.tree.yview)
+        scrollbar = ttk.Scrollbar(self.frame_lista, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
         
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.frame_lista.bind("<Configure>", self._ajustar_columnas_tree)
+        self.root.after(100, self._ajustar_columnas_tree)
         
-        # Frame para botones de acción (fuera del frame_lista, debajo)
-        frame_acciones = tk.Frame(main_frame, bg="#FFE4E1")
-        frame_acciones.pack(fill=tk.X, pady=(0, 0))
+        self.frame_acciones = tk.Frame(self.main_frame, bg=t["bg_main"])
+        self.frame_acciones.pack(fill=tk.X, pady=(0, 0))
         
-        btn_editar = tk.Button(
-            frame_acciones,
+        self.btn_editar = tk.Button(
+            self.frame_acciones,
             text="✏️ Editar",
             command=self.editar_tarea,
-            bg="#FFD700",
-            fg="black",
+            bg=t["btn_bg"],
+            fg=t["btn_fg"],
             font=("Arial", 10, "bold"),
             padx=15,
             pady=5,
             cursor="hand2"
         )
-        btn_editar.pack(side=tk.LEFT, padx=5)
-        
-        btn_completar = tk.Button(
-            frame_acciones,
+        self.btn_completar = tk.Button(
+            self.frame_acciones,
             text="✓ Completar",
             command=self.marcar_completada,
-            bg="#90EE90",
+            bg=t["importance_normal"],
             fg="black",
             font=("Arial", 10, "bold"),
             padx=15,
             pady=5,
             cursor="hand2"
         )
-        btn_completar.pack(side=tk.LEFT, padx=5)
-        
-        btn_eliminar = tk.Button(
-            frame_acciones,
+        self.btn_eliminar = tk.Button(
+            self.frame_acciones,
             text="🗑️ Eliminar",
             command=self.eliminar_tarea,
-            bg="#FF6347",
+            bg=t["importance_urgente"],
             fg="white",
             font=("Arial", 10, "bold"),
             padx=15,
             pady=5,
             cursor="hand2"
         )
-        btn_eliminar.pack(side=tk.LEFT, padx=5)
-        
-        
-        btn_refrescar = tk.Button(
-            frame_acciones,
+        self.btn_refrescar = tk.Button(
+            self.frame_acciones,
             text="🔄 Refrescar",
             command=self.actualizar_lista_tareas,
-            bg="#DDA0DD",
+            bg=t["importance_importante"],
             fg="black",
             font=("Arial", 10, "bold"),
             padx=15,
             pady=5,
             cursor="hand2"
         )
-        btn_refrescar.pack(side=tk.LEFT, padx=5)
+        self._reorganizar_botones_acciones()
+    
+    def _reorganizar_botones_acciones(self):
+        """En Mediano/Pantalla completa: los 4 botones en una fila con ancho proporcional. En Pequeño: dos filas de dos."""
+        if self.tamaño_ventana_actual == "pequeño":
+            for c in range(2):
+                self.frame_acciones.columnconfigure(c, weight=1)
+            self.btn_editar.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+            self.btn_completar.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+            self.btn_eliminar.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
+            self.btn_refrescar.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
+        else:
+            for c in range(4):
+                self.frame_acciones.columnconfigure(c, weight=1)
+            self.btn_editar.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+            self.btn_completar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+            self.btn_eliminar.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+            self.btn_refrescar.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+    
+    def _aplicar_estilo_ttk(self):
+        """Aplica colores del tema actual a widgets ttk (Treeview, etc.)."""
+        t = self.get_tema()
+        style = ttk.Style()
+        style.configure("TFrame", background=t["bg_main"])
+        style.configure("TLabelframe", background=t["bg_main"], foreground=t["fg_title"])
+        style.configure("TLabelframe.Label", background=t["bg_main"], foreground=t["fg_title"])
+        style.configure("Treeview", background="white", fieldbackground="white", foreground=t["fg_text"])
+        style.configure("Vertical.TScrollbar", background=t["btn_bg"])
+    
+    def _guardar_recordar_estilo(self):
+        """Guarda la opción 'mantener estilo al iniciar' al marcar/desmarcar el checkbox."""
+        guardar_tema(self.tema_actual, recordar_estilo=self.var_recordar_estilo.get())
+    
+    def _etiqueta_tamaño(self, modo):
+        """Devuelve la etiqueta visible para un modo de tamaño guardado."""
+        for etiqueta, valor in TAMANOS_VENTANA.items():
+            if valor == modo:
+                return etiqueta
+        return "Mediano"
+    
+    def _aplicar_tamaño_ventana(self, modo):
+        """Aplica el tamaño de ventana: completa (fullscreen), mediano o pequeño (móvil)."""
+        try:
+            if modo == "completa":
+                self.root.minsize(580, 520)
+                try:
+                    self.root.state("zoomed")
+                except tk.TclError:
+                    try:
+                        self.root.attributes("-zoomed", True)
+                    except tk.TclError:
+                        w = self.root.winfo_screenwidth()
+                        h = self.root.winfo_screenheight()
+                        self.root.geometry(f"{w}x{h}+0+0")
+            elif modo == "pequeño":
+                self.root.state("normal")
+                self.root.minsize(360, 640)
+                ancho, alto = TAMANOS_GEOMETRIA["pequeño"]
+                self.root.geometry(f"{ancho}x{alto}")
+            else:
+                self.root.state("normal")
+                self.root.minsize(580, 520)
+                ancho, alto = TAMANOS_GEOMETRIA["mediano"]
+                self.root.geometry(f"{ancho}x{alto}")
+        except (tk.TclError, Exception):
+            self.root.minsize(580, 520)
+            self.root.geometry("900x750")
+        if hasattr(self, "frame_acciones") and hasattr(self, "btn_editar"):
+            self._reorganizar_botones_acciones()
+        if hasattr(self, "checkbox_permanente"):
+            self._actualizar_texto_checkbox_permanente()
+    
+    def _actualizar_texto_checkbox_permanente(self):
+        """En tamaño Pequeño muestra solo 'TP'; en Mediano/Pantalla completa el texto completo."""
+        if self.tamaño_ventana_actual == "pequeño":
+            self.checkbox_permanente.config(text=self._texto_checkbox_permanente_corto)
+        else:
+            self.checkbox_permanente.config(text=self._texto_checkbox_permanente_largo)
+    
+    def _cambiar_tamaño_ventana(self, event=None):
+        """Cambia el tamaño de ventana según el combo y guarda la preferencia."""
+        etiqueta = self.var_tamaño.get()
+        modo = TAMANOS_VENTANA.get(etiqueta, "mediano")
+        self.tamaño_ventana_actual = modo
+        guardar_tema(tamaño_ventana=modo)
+        self._aplicar_tamaño_ventana(modo)
+    
+    def _actualizar_wraplength(self, event=None):
+        """Actualiza el wraplength del mensaje de notificaciones al redimensionar."""
+        try:
+            if event and event.width > 100 and hasattr(self, "label_notif"):
+                self.label_notif.config(wraplength=max(150, event.width - 80))
+        except (tk.TclError, AttributeError):
+            pass
+    
+    def _ajustar_columnas_tree(self, event=None):
+        """Redistribuye el ancho de las columnas del Treeview al redimensionar la ventana."""
+        try:
+            w = self.frame_lista.winfo_width()
+            if w <= 1:
+                return
+            scrollbar_w = 20
+            disponible = max(0, w - scrollbar_w - 20)
+            min_id = self._tree_min_widths["ID"]
+            min_imp = self._tree_min_widths["Importancia"]
+            resto = disponible - min_id - min_imp
+            if resto < 0:
+                self.tree.column("ID", width=max(min_id, min_id + resto))
+                self.tree.column("Importancia", width=max(min_imp, min_imp + resto))
+                self.tree.column("Título", width=self._tree_min_widths["Título"])
+                self.tree.column("Descripción", width=self._tree_min_widths["Descripción"])
+                self.tree.column("Recordatorio", width=self._tree_min_widths["Recordatorio"])
+                return
+            # Proporciones: Título 25%, Descripción 40%, Recordatorio 35%
+            self.tree.column("ID", width=min_id)
+            self.tree.column("Importancia", width=min_imp)
+            self.tree.column("Título", width=max(self._tree_min_widths["Título"], int(resto * 0.25)))
+            self.tree.column("Descripción", width=max(self._tree_min_widths["Descripción"], int(resto * 0.40)))
+            self.tree.column("Recordatorio", width=max(self._tree_min_widths["Recordatorio"], int(resto * 0.35)))
+        except (tk.TclError, AttributeError):
+            pass
+    
+    def _cambiar_tema(self, event=None):
+        """Cambia el tema y actualiza toda la interfaz."""
+        nuevo = self.var_tema.get()
+        if nuevo not in TEMAS:
+            return
+        self.tema_actual = nuevo
+        guardar_tema(nuevo, recordar_estilo=self.var_recordar_estilo.get())
+        t = self.get_tema()
+        self.root.configure(bg=t["bg_main"])
+        self._aplicar_tema_recursivo(self.main_frame, t)
+        self._aplicar_estilo_ttk()
+        self.tree.tag_configure("urgente", background=t["bg_main"], foreground=t["importance_urgente"])
+        self.tree.tag_configure("importante", background=t["bg_main"], foreground=t["importance_importante"])
+        # Actualizar textos según tema (emojis Gatos, etc.)
+        self.titulo_label.config(text=t.get("titulo_principal", "📝 AGENDA VIRTUAL"))
+        self.frame_agregar.config(text=t.get("titulo_nueva_tarea", "➕ Nueva Tarea"), fg=t["fg_title"])
+        self.frame_lista.config(text=t.get("titulo_tareas_pendientes", "📋 Tareas Pendientes"), fg=t["fg_title"])
+        self.btn_agregar.config(text=t.get("btn_agregar_text", "➕ Agregar Tarea"))
+        self.label_notif.config(text=t.get("msg_notif", "✨ Las notificaciones se enviarán automáticamente a tu sistema. ✨"))
+        try:
+            cursor_tema = "hand2" if self.tema_actual == "Gatos" else "heart" if self.tema_actual == "Kawaii" else "arrow"
+            self.root.config(cursor=cursor_tema)
+        except tk.TclError:
+            pass
+    
+    def _aplicar_tema_recursivo(self, widget, t):
+        """Aplica colores del tema a un widget y sus hijos (tk)."""
+        try:
+            if isinstance(widget, tk.LabelFrame):
+                widget.configure(bg=t["bg_main"], fg=t["fg_title"])
+            elif isinstance(widget, (tk.Frame, tk.Toplevel)):
+                widget.configure(bg=t["bg_main"])
+            elif isinstance(widget, tk.Label):
+                widget.configure(bg=t["bg_main"])
+                font_str = str(widget.cget("font"))
+                widget.configure(fg=t["fg_title"] if "22" in font_str or "bold" in font_str.lower() else t["fg_text"])
+            elif isinstance(widget, tk.Button):
+                widget.configure(bg=t["btn_bg"], fg=t["btn_fg"])
+            elif isinstance(widget, tk.Checkbutton):
+                widget.configure(bg=t["bg_main"], fg=t["fg_text"])
+            elif isinstance(widget, tk.Radiobutton):
+                widget.configure(bg=t["bg_main"], fg=t["fg_text"], activebackground=t["bg_main"])
+        except (tk.TclError, Exception):
+            pass
+        for child in widget.winfo_children():
+            self._aplicar_tema_recursivo(child, t)
     
     def agregar_tarea(self):
         """Agrega una nueva tarea"""
@@ -914,9 +1246,10 @@ class TodoApp:
                 fecha_recordatorio_str
             ), tags=(tag,))
         
-        # Configurar colores para las etiquetas
-        self.tree.tag_configure("urgente", background="#FFE4E1", foreground="#FF0000")
-        self.tree.tag_configure("importante", background="#FFF8DC", foreground="#FF8C00")
+        # Configurar colores para las etiquetas según tema
+        t = self.get_tema()
+        self.tree.tag_configure("urgente", background=t["bg_main"], foreground=t["importance_urgente"])
+        self.tree.tag_configure("importante", background=t["bg_main"], foreground=t["importance_importante"])
     
     def marcar_completada(self):
         """Marca la tarea seleccionada como completada"""
@@ -971,17 +1304,17 @@ class TodoApp:
             _, titulo_actual, descripcion_actual, _, fecha_recordatorio_actual, _, notif_sistema_actual, notif_correo_actual, importancia_actual = tarea
             es_permanente_actual = False
         
-        # Crear ventana de edición
+        t = self.get_tema()
+        # Crear ventana de edición (con colores del tema actual)
         ventana_editar = tk.Toplevel(self.root)
         ventana_editar.title("✏️ Editar Tarea")
         ventana_editar.geometry("600x650")
         ventana_editar.minsize(550, 600)
-        ventana_editar.configure(bg="#FFE4E1")
-        ventana_editar.transient(self.root)  # Hace que la ventana sea modal
-        ventana_editar.grab_set()  # Bloquea la ventana principal
+        ventana_editar.configure(bg=t["bg_main"])
+        ventana_editar.transient(self.root)
+        ventana_editar.grab_set()
         
-        # Frame principal con scrollbar si es necesario
-        frame_editar = tk.Frame(ventana_editar, bg="#FFE4E1", padx=20, pady=15)
+        frame_editar = tk.Frame(ventana_editar, bg=t["bg_main"], padx=20, pady=15)
         frame_editar.pack(fill=tk.BOTH, expand=True)
         
         # Título
@@ -989,66 +1322,43 @@ class TodoApp:
             frame_editar,
             text="✏️ Editar Tarea",
             font=("Arial", 18, "bold"),
-            bg="#FFE4E1",
-            fg="#FF69B4"
+            bg=t["bg_main"],
+            fg=t["fg_title"]
         ).pack(pady=(0, 15))
         
         # Título de la tarea
-        tk.Label(
-            frame_editar,
-            text="Título:",
-            bg="#FFE4E1",
-            font=("Arial", 11, "bold")
-        ).pack(anchor=tk.W, pady=(0, 5))
+        tk.Label(frame_editar, text="Título:", bg=t["bg_main"], fg=t["fg_text"], font=("Arial", 11, "bold")).pack(anchor=tk.W, pady=(0, 5))
         entry_titulo_edit = tk.Entry(frame_editar, font=("Arial", 11), width=50)
         entry_titulo_edit.pack(fill=tk.X, pady=(0, 12))
         entry_titulo_edit.insert(0, titulo_actual)
         
         # Descripción
-        tk.Label(
-            frame_editar,
-            text="Descripción:",
-            bg="#FFE4E1",
-            font=("Arial", 11, "bold")
-        ).pack(anchor=tk.W, pady=(0, 5))
+        tk.Label(frame_editar, text="Descripción:", bg=t["bg_main"], fg=t["fg_text"], font=("Arial", 11, "bold")).pack(anchor=tk.W, pady=(0, 5))
         text_descripcion_edit = tk.Text(frame_editar, font=("Arial", 10), height=4, width=50)
         text_descripcion_edit.pack(fill=tk.X, pady=(0, 12))
         text_descripcion_edit.insert("1.0", descripcion_actual or "")
         
         # Frame para recordatorio
-        frame_recordatorio_edit = tk.Frame(frame_editar, bg="#FFE4E1")
+        frame_recordatorio_edit = tk.Frame(frame_editar, bg=t["bg_main"])
         frame_recordatorio_edit.pack(fill=tk.X, pady=(0, 12))
         
-        tk.Label(
-            frame_recordatorio_edit,
-            text="Fecha de recordatorio:",
-            bg="#FFE4E1",
-            font=("Arial", 10)
-        ).pack(side=tk.LEFT, padx=(0, 10))
+        tk.Label(frame_recordatorio_edit, text="Fecha de recordatorio:", bg=t["bg_main"], fg=t["fg_text"], font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 10))
         
-        # Calendario para editar
         calendario_edit = DateEntry(
             frame_recordatorio_edit,
             width=12,
-            background='#FF69B4',
-            foreground='white',
+            background=t["calendar_bg"],
+            foreground=t["calendar_fg"],
             borderwidth=2,
             date_pattern='yyyy-mm-dd',
             font=("Arial", 10)
         )
         calendario_edit.pack(side=tk.LEFT, padx=(0, 10))
         
-        # Hora del recordatorio
-        tk.Label(
-            frame_recordatorio_edit,
-            text="Hora (HH:MM):",
-            bg="#FFE4E1",
-            font=("Arial", 10)
-        ).pack(side=tk.LEFT, padx=(0, 5))
+        tk.Label(frame_recordatorio_edit, text="Hora (HH:MM):", bg=t["bg_main"], fg=t["fg_text"], font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 5))
         entry_hora_edit = tk.Entry(frame_recordatorio_edit, font=("Arial", 10), width=8)
         entry_hora_edit.pack(side=tk.LEFT)
         
-        # Si hay fecha de recordatorio, cargarla
         var_usar_recordatorio_edit = tk.BooleanVar(value=(fecha_recordatorio_actual is not None))
         if fecha_recordatorio_actual:
             try:
@@ -1073,63 +1383,54 @@ class TodoApp:
             frame_recordatorio_edit,
             text="Activar recordatorio",
             variable=var_usar_recordatorio_edit,
-            bg="#FFE4E1",
+            bg=t["bg_main"],
+            fg=t["fg_text"],
             font=("Arial", 10),
             command=toggle_recordatorio_edit
         ).pack(side=tk.LEFT, padx=(10, 0))
         
-        # Checkbox para tarea permanente
         var_es_permanente_edit = tk.BooleanVar(value=bool(es_permanente_actual))
         tk.Checkbutton(
             frame_recordatorio_edit,
             text="🔄 Tarea permanente (diaria desde esta fecha)",
             variable=var_es_permanente_edit,
-            bg="#FFE4E1",
+            bg=t["bg_main"],
             font=("Arial", 10),
-            fg="#8B008B"
+            fg=t["fg_text"]
         ).pack(side=tk.LEFT, padx=(15, 0))
         
-        toggle_recordatorio_edit()  # Aplicar estado inicial
+        toggle_recordatorio_edit()
         
-        # Frame para importancia
-        frame_importancia_edit = tk.Frame(frame_editar, bg="#FFE4E1")
+        frame_importancia_edit = tk.Frame(frame_editar, bg=t["bg_main"])
         frame_importancia_edit.pack(fill=tk.X, pady=(0, 12))
         
-        tk.Label(
-            frame_importancia_edit,
-            text="Importancia:",
-            bg="#FFE4E1",
-            font=("Arial", 10, "bold")
-        ).pack(side=tk.LEFT, padx=(0, 10))
+        tk.Label(frame_importancia_edit, text="Importancia:", bg=t["bg_main"], fg=t["fg_text"], font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=(0, 10))
         
         var_importancia_edit = tk.StringVar(value=importancia_actual or "Normal")
-        opciones_importancia = ["Normal", "Importante", "Urgente"]
-        
-        for opcion in opciones_importancia:
-            color = "#87CEEB" if opcion == "Normal" else "#FFD700" if opcion == "Importante" else "#FF6347"
+        for opcion in ["Normal", "Importante", "Urgente"]:
+            color = t["importance_normal"] if opcion == "Normal" else t["importance_importante"] if opcion == "Importante" else t["importance_urgente"]
             tk.Radiobutton(
                 frame_importancia_edit,
                 text=opcion,
                 variable=var_importancia_edit,
                 value=opcion,
-                bg="#FFE4E1",
+                bg=t["bg_main"],
+                fg=t["fg_text"],
                 font=("Arial", 10),
                 selectcolor=color,
-                activebackground="#FFE4E1"
+                activebackground=t["bg_main"]
             ).pack(side=tk.LEFT, padx=(0, 15))
         
-        # Checkbox para notificaciones
-        frame_notificaciones_edit = tk.Frame(frame_editar, bg="#FFE4E1")
+        frame_notificaciones_edit = tk.Frame(frame_editar, bg=t["bg_main"])
         frame_notificaciones_edit.pack(fill=tk.X, pady=(0, 15))
         
         var_notif_sistema_edit = tk.BooleanVar(value=bool(notif_sistema_actual))
-        
         tk.Label(
             frame_notificaciones_edit,
             text="✨ Las notificaciones se enviarán automáticamente ✨",
-            bg="#FFE4E1",
+            bg=t["bg_main"],
             font=("Arial", 10, "bold"),
-            fg="#FF69B4"
+            fg=t["fg_title"]
         ).pack(side=tk.LEFT)
         
         def guardar_cambios():
@@ -1191,16 +1492,15 @@ class TodoApp:
             ventana_editar.destroy()
             self.actualizar_lista_tareas()
         
-        # Botones
-        frame_botones_edit = tk.Frame(frame_editar, bg="#FFE4E1")
+        frame_botones_edit = tk.Frame(frame_editar, bg=t["bg_main"])
         frame_botones_edit.pack(fill=tk.X, pady=(15, 0))
         
         tk.Button(
             frame_botones_edit,
             text="💾 Guardar Cambios",
             command=guardar_cambios,
-            bg="#FF69B4",
-            fg="white",
+            bg=t["btn_bg"],
+            fg=t["btn_fg"],
             font=("Arial", 11, "bold"),
             padx=20,
             pady=5,
@@ -1211,7 +1511,7 @@ class TodoApp:
             frame_botones_edit,
             text="❌ Cancelar",
             command=ventana_editar.destroy,
-            bg="#808080",
+            bg=t["importance_urgente"],
             fg="white",
             font=("Arial", 11, "bold"),
             padx=20,
