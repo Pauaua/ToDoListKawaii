@@ -117,4 +117,7 @@ TODOLISTKAWAII/
 
 ## 📄 Licencia
 
-Proyecto de código abierto para uso personal y educativo.
+Proyecto de código abierto para uso personal y/o colectivo. 
+
+
+## Développé par une unicornia muy competente © 2026
